@@ -2,6 +2,7 @@ package no.nav.familie.klage.behandling.domain
 
 import no.nav.familie.klage.felles.domain.BehandlerRolle
 import no.nav.familie.klage.felles.domain.Sporbar
+import no.nav.familie.kontrakter.felles.Fagsystem
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Embedded
 import java.time.LocalDateTime
