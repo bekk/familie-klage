@@ -4,13 +4,9 @@ import no.nav.familie.klage.behandling.domain.Behandling
 import no.nav.familie.klage.behandling.domain.BehandlingStatus
 import no.nav.familie.klage.behandling.domain.StegType
 import no.nav.familie.klage.behandling.domain.BehandlingsÅrsak
-import no.nav.familie.klage.behandling.domain.StegTypeDto
 import no.nav.familie.klage.behandling.domain.StønadsType
 import no.nav.familie.klage.behandling.dto.BehandlingDto
 import no.nav.familie.klage.behandling.dto.tilDto
-import no.nav.familie.klage.behandlingshistorikk.BehandlingshistorikkService
-import no.nav.familie.klage.behandlingshistorikk.domain.Behandlingshistorikk
-import no.nav.familie.klage.brev.AvsnittRepository
 import no.nav.familie.klage.brev.BrevRepository
 import no.nav.familie.klage.brev.FamilieDokumentClient
 import no.nav.familie.klage.fagsak.FagsakService
@@ -37,17 +33,16 @@ import java.util.UUID
 @Service
 class BehandlingService(
         private val behandlingsRepository: BehandlingsRepository,
-        private val behandlingshistorikkService: BehandlingshistorikkService,
         private val personopplysningerService: PersonopplysningerService,
         private val fagsakService: FagsakService,
         private val brevRepository: BrevRepository,
-        private val avsnittRepository: AvsnittRepository,
         private val familieDokumentClient: FamilieDokumentClient,
         private val familieIntegrasjonerClient: FamilieIntegrasjonerClient,
         private val formService: FormService,
         private val vurderingService: VurderingService,
         private val kabalService: KabalService,
-        private val integrasjonerService: IntegrasjonerService
+        private val integrasjonerService: IntegrasjonerService,
+        private val stegService: StegService
     ){
 
     val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -93,45 +88,17 @@ class BehandlingService(
             )
         )
 
-        behandlingshistorikkService.opprettBehandlingshistorikk(
-            behandlingshistorikk = Behandlingshistorikk(
-                behandlingId = behandling.id,
-                steg = StegType.FORMKRAV,
-                opprettetAv = "Juni Leirvik"
-            )
-        )
-
-        /*val navn = Navn(
-            fornavn = "Juni",
-            mellomnavn = "Leirvik",
-            etternavn = "Larsen",
-            visningsnavn = "Juni Leirvik"
-        )*/
-
-        /*val telefon = Telefonnummer(
-            landskode = "+47",
-            nummer = "46840856"
-        )*/
-
         return behandling
     }
 
     @Transactional
-    fun oppdaterSteg(behandlingId: UUID, steg: StegTypeDto){
-        behandlingsRepository.updateSteg(behandlingId, steg.stegType)
-        behandlingshistorikkService.opprettBehandlingshistorikk(
-            behandlingshistorikk = Behandlingshistorikk(
-                behandlingId = behandlingId,
-                steg = StegType.VURDERING,
-                opprettetAv = "Juni Leirvik"
-            )
-        )
+    fun ferdigstillBrev(behandlingId: UUID){
+        stegService.oppdaterSteg(behandlingId, StegType.BREV)
+
+        arkiverOgDistribuerBrev(behandlingId)
+        sendTilKabal(behandlingId)
     }
 
-    fun ferdigstillBrev(behandlingId: UUID){
-        arkiverOgDistribuerBrev(behandlingId)
-        sendTilKaball(behandlingId)
-    }
 
     fun arkiverOgDistribuerBrev(behandlingId: UUID){
         val brev = brevRepository.findByIdOrThrow(behandlingId)
@@ -158,7 +125,7 @@ class BehandlingService(
         logger.info("Mottok distnummer fra DokDist: $distnummer")
     }
 
-    fun sendTilKaball(behandlingId: UUID){
+    fun sendTilKabal(behandlingId: UUID){
         if(
             formService.formkravErOppfylt(behandlingId) &&
             vurderingService.klageTasIkkeTilFølge(behandlingId)

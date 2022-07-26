@@ -36,11 +36,8 @@ enum class BehandlingStatus {
     VENTER,
     FERDIGSTILT
 }
-
-data class StegTypeDto(
-    val stegType: StegTypeNavn
-)
 enum class StegTypeNavn {
+    OPPRETTET,
     FORMKRAV,
     VURDERING,
     BREV,
@@ -48,13 +45,23 @@ enum class StegTypeNavn {
     VENTE_PÅ_SVAR_FRA_BESLUTTER,
     BEHANDLING_FERDIGSTILT
 }
+/*
+enum class Fagsystem {
+    EF,
+    BA,
+    KS
+}*/
 
 enum class StegType(
     val rekkefølge: Int,
     val tillattFor: BehandlerRolle,
     private val gyldigIKombinasjonMedStatus: List<BehandlingStatus>
 ) {
-
+    OPPRETTET(
+        rekkefølge = 0,
+        tillattFor = BehandlerRolle.SAKSBEHANDLER,
+        gyldigIKombinasjonMedStatus = listOf(BehandlingStatus.OPPRETTET)
+    ),
     FORMKRAV(
         rekkefølge = 1,
         tillattFor = BehandlerRolle.SAKSBEHANDLER,
@@ -85,12 +92,18 @@ enum class StegType(
         tillattFor = BehandlerRolle.SYSTEM,
         gyldigIKombinasjonMedStatus = listOf(BehandlingStatus.FERDIGSTILT)
     );
-}
 
-enum class Fagsystem {
-    EF,
-    BA,
-    KS
+    fun hentNesteSteg(): StegType {
+        return when (this) {
+            OPPRETTET -> FORMKRAV
+            FORMKRAV -> VURDERING
+            VURDERING -> BREV
+            BREV -> SEND_TIL_BESLUTTER
+            SEND_TIL_BESLUTTER -> VENTE_PÅ_SVAR_FRA_BESLUTTER
+            VENTE_PÅ_SVAR_FRA_BESLUTTER -> BEHANDLING_FERDIGSTILT
+            BEHANDLING_FERDIGSTILT -> BEHANDLING_FERDIGSTILT
+        }
+    }
 }
 
 enum class StønadsType {
