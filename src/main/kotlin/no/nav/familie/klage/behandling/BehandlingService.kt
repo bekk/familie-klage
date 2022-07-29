@@ -64,7 +64,7 @@ class BehandlingService(
         personopplysningerService.opprettPersonopplysninger(
             personopplysninger = Personopplysninger(
                 personIdent = fødselsnummer,
-                navn = "Juni",
+                navn = "Juny",
                 kjønn = Kjønn.KVINNE,
                 adresse = "Korsgata 21A",
                 telefonnummer = "46840856"
